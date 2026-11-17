@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#04060f">
+<title>COSMOS 3D · 可交互宇宙漫游</title>
+<meta name="description" content="一个可以自由漫游的 3D 宇宙模型：太阳系、银河系与深空天体，边看边学。">
+<script>
+  window.__errs = [];
+  window.addEventListener('error', function (e) {
+    window.__errs.push((e.message || 'error') + ' @ ' + (e.filename || '') + ':' + (e.lineno || 0));
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    window.__errs.push('rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+  });
+  (function () {
+    var ce = console.error;
+    console.error = function () {
+      try { window.__errs.push(Array.prototype.map.call(arguments, String).join(' ')); } catch (x) {}
+      return ce.apply(console, arguments);
+    };
+  })();
+</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="stage"></canvas>
+  <div id="labels" class="label-layer" aria-live="off"></div>
+
+  <header id="topbar">
+    <div class="brand">
+      <div class="brand-mark">◍</div>
+      <div>
+        <b>COSMOS 3D</b>
+        <small>可交互宇宙漫游 · 中文</small>
+      </div>
+    </div>
+    <nav class="scene-tabs" id="scene-tabs" aria-label="场景">
+      <button data-scene="solar" class="active">太阳系</button>
+      <button data-scene="stellar">恒星演化</button>
+      <button data-scene="galaxy">银河系</button>
+      <button data-scene="deep">深空</button>
+      <button data-scene="zoom">宇宙缩放</button>
+      <button data-scene="starmap">星空</button>
+    </nav>
+    <div class="top-actions">
+      <button class="t-btn primary" id="btn-tour">▶ <span class="lbl">导览</span></button>
+      <button class="t-btn" id="btn-learn">知识库</button>
+      <button class="t-btn" id="btn-quiz">测验</button>
+      <button class="t-btn icon" id="btn-share" title="分享 · 导出一张图">⤴</button>
+      <button class="t-btn progress" id="btn-progress" title="学习进度"><span class="p-dot"></span><span id="prog-txt">0/19</span></button>
+      <button class="t-btn icon" id="btn-help" title="帮助与快捷键">?</button>
+    </div>
+  </header>
+
+  <aside id="rail">
+    <div class="rail-head">
+      <span id="rail-title">太阳系 · 目的地</span>
+    </div>
+    <div class="rail-list" id="rail-list"></div>
+    <div class="rail-foot"><span class="dot-live"></span>点击天体或标签，查看资料</div>
+  </aside>
+  <button id="rail-toggle" class="rail-handle" title="收起">‹</button>
+
+  <section id="info" class="hidden" aria-live="polite">
+    <div class="info-head">
+      <div class="info-kind" id="info-kind">天体</div>
+      <div class="info-title" id="info-title">—</div>
+      <div class="info-en" id="info-en"></div>
+      <button class="info-close" id="info-close" title="关闭">✕</button>
+    </div>
+    <div class="info-body" id="info-body"></div>
+  </section>
+
+  <footer id="dock">
+    <div class="dock-group stellar-panel hidden" id="stellar-panel">
+      <button class="speed-btn st-play" id="st-play" title="播放 / 暂停">▶</button>
+      <input type="range" id="st-slider" min="0" max="1000" value="0" aria-label="恒星演化时间轴">
+      <span class="st-stage" id="st-stage">分子云</span>
+      <span class="dock-sep"></span>
+      <span class="st-dur" id="st-dur">约 3,000 万年</span>
+    </div>
+    <div class="dock-group zoom-panel hidden" id="zoom-panel">
+      <button class="speed-btn zp-play" id="zp-play" title="播放 / 暂停">▶</button>
+      <input type="range" id="zp-slider" min="0" max="1000" value="0" aria-label="宇宙缩放尺度">
+      <span class="zp-dex" id="zp-dex">1.7 m</span>
+      <span class="dock-sep"></span>
+      <span class="zp-name" id="zp-name">一个人</span>
+    </div>
+    <div class="dock-group sky-panel hidden" id="sky-panel">
+      <span class="sky-lp-t">光污染</span>
+      <input type="range" id="sky-lp" min="0" max="5" step="1" value="2" aria-label="光污染等级">
+      <span class="sky-lp-v" id="sky-lp-v">2 级 · 郊区</span>
+      <span class="dock-sep"></span>
+      <span class="sky-fov" id="sky-fov">52°</span>
+      <span class="dock-sep"></span>
+      <button class="speed-btn obs-btn" id="obs-btn" title="今晚的天空：按时间与地点还原此刻真实天象">今晚</button>
+      <button class="speed-btn obs-btn hidden" id="obs-exit" title="退出观测模式">退出</button>
+    </div>
+    <div class="dock-group" id="dock-time">
+      <button class="speed-btn" data-speed="0">暂停</button>
+      <button class="speed-btn active" data-speed="8">1×</button>
+      <button class="speed-btn" data-speed="40">5×</button>
+      <button class="speed-btn" data-speed="160">20×</button>
+      <span class="dock-sep"></span>
+      <span class="dock-date" id="dock-date">2026-11-16</span>
+    </div>
+    <div class="dock-group">
+      <button class="dock-toggle on" id="tg-orbits">轨道</button>
+      <button class="dock-toggle on" id="tg-labels">标签</button>
+      <button class="dock-toggle scale" id="tg-scale" title="真实尺寸与真实距离（快捷键 S）">真实比例</button>
+    </div>
+    <div id="dock-hint">拖拽旋转 · 滚轮缩放 · 右键平移 · 点击天体</div>
+    <div class="dock-right">
+      <button class="t-btn" id="btn-reset">重置视角</button>
+      <button class="t-btn icon" id="btn-full" title="全屏">⛶</button>
+    </div>
+  </footer>
+
+  <div id="obs-bar" class="hidden">
+    <div class="obs-head">
+      <span class="obs-kicker">今晚的天空</span>
+      <span class="obs-live" id="obs-live">实时</span>
+      <span class="sn-close" id="obs-close">✕</span>
+    </div>
+    <div class="obs-row">
+      <input type="datetime-local" id="obs-date" step="60">
+      <select id="obs-site"></select>
+      <button id="obs-now">此刻</button>
+    </div>
+    <div class="obs-meta" id="obs-meta">—</div>
+  </div>
+
+  <div id="scale-note" class="hidden">
+    <div class="sn-head"><span class="sn-kicker">真实比例</span><span class="sn-close" id="sn-close">✕</span></div>
+    <div class="sn-title">尺寸与距离，都不再压缩</div>
+    <p class="sn-body" id="sn-body">太阳直径 139.2 万公里，地球 1.27 万公里。</p>
+    <div class="sn-actions">
+      <button data-real="all">看整个太阳系</button>
+      <button data-real="sun">看太阳</button>
+      <button data-real="earth">看地球</button>
+      <button data-real="off" class="sn-off">回到观赏比例</button>
+    </div>
+  </div>
+
+  <div id="hr-panel" class="hidden">
+    <div class="hr-head"><span class="hr-kicker">赫罗图</span><span class="hr-sub">H–R Diagram</span><span class="hr-close" id="hr-close" title="收起">✕</span></div>
+    <canvas id="hr" width="680" height="440"></canvas>
+    <div class="hr-foot"><span><i class="hr-dot"></i>当前位置</span><span><i class="hr-line"></i>演化轨迹</span></div>
+  </div>
+
+  <div id="tourbar" class="hidden">
+    <div class="tour-dots" id="tour-dots"></div>
+    <div class="tour-text" id="tour-text"></div>
+    <div class="tour-actions">
+      <button id="tour-prev" title="上一站">‹</button>
+      <button id="tour-next" title="下一站">›</button>
+      <button class="tour-exit" id="tour-exit" title="退出导览">退出</button>
+    </div>
+  </div>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-top">
+        <div>
+          <h2 id="modal-title">知识库</h2>
+          <div class="sub" id="modal-sub">10 篇短文 · 从尺度到暗能量</div>
+        </div>
+        <button class="modal-close" id="modal-close" title="关闭">✕</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <div id="loading">
+    <div class="load-inner">
+      <div class="load-ring"></div>
+      <b>COSMOS 3D</b>
+      <small>正在点燃第一颗恒星…</small>
+    </div>
+  </div>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/textures.js"></script>
+<script src="js/core.js"></script>
+<script src="js/solar.js"></script>
+<script src="js/galaxy.js"></script>
+<script src="js/deep.js"></script>
+<script src="js/stellar.js"></script>
+<script src="vendor/astronomy.js"></script>
+<script src="js/skystars.js"></script>
+<script src="js/zoom.js"></script>
+<script src="js/starmap.js"></script>
+<script src="js/progress.js"></script>
+<script src="js/share.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
