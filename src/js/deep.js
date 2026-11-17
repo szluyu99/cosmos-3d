@@ -1,5 +1,5 @@
 /* ============================================================
-   COSMOS 3D — 深空：黑洞 / 蟹状星云 / 星系并合
+   COSMOS 3D — 深空：黑洞 / 蟹状星云 / 星系并合 / 类星体 / 脉冲星 / 星云 / 引力透镜 / 深场
    ============================================================ */
 (function () {
   const TAU = Math.PI * 2;
@@ -413,6 +413,256 @@
     labels.push({ id: 'merger', text: '星系并合 · 触须星系', cls: 'label-arm', maxDist: 1800, pos: () => MERGE_POS.clone().add(new THREE.Vector3(0, 46, 0)) });
     pickSphere(mergeGroup, new THREE.Vector3(0, 0, 0), 60, 'merger');
 
+    /* ============================================================
+       类星体 · 3C 273
+       ============================================================ */
+    const QSO_POS = new THREE.Vector3(700, 235, 380);
+    const qsoGroup = new THREE.Group();
+    qsoGroup.position.copy(QSO_POS);
+    qsoGroup.rotation.set(0.2, 0, 0.24);
+    scene.add(qsoGroup);
+
+    const qHost = galaxyPoints(9000, 30, 314159, { arms: 2, twist: 2.2, spin: 0.05, scale: 0.75 });
+    qsoGroup.add(qHost);
+
+    const qCore = new THREE.Mesh(new THREE.SphereGeometry(3.0, 24, 16), new THREE.MeshBasicMaterial({ color: 0xf6faff }));
+    qsoGroup.add(qCore);
+    const qHalo = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: C3D.Tex.glow('rgba(210,235,255,0.92)', 'rgba(110,170,255,0.02)'),
+      transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending
+    }));
+    qHalo.scale.set(58, 58, 1);
+    qsoGroup.add(qHalo);
+
+    // 双极喷流：沿自转轴喷出的相对论等离子体
+    const qJet = (function () {
+      const N = 7600;
+      const g = new THREE.BufferGeometry();
+      const p = new Float32Array(N * 3), c = new Float32Array(N * 3), s = new Float32Array(N);
+      const rnd = C3D.noise.mulberry32(880021);
+      const col = new THREE.Color();
+      for (let i = 0; i < N; i++) {
+        const dir = i % 2 ? 1 : -1;
+        const t = Math.pow(rnd(), 0.7);
+        const rad = (0.35 + t * 4.6) * Math.sqrt(rnd());
+        const a = rnd() * TAU;
+        p[i * 3] = Math.cos(a) * rad;
+        p[i * 3 + 1] = dir * (4 + t * 92);
+        p[i * 3 + 2] = Math.sin(a) * rad;
+        const b = 0.62 + 0.55 * (1 - t);
+        col.setRGB(0.60 * b, 0.86 * b, 1.0 * b);
+        c[i * 3] = col.r; c[i * 3 + 1] = col.g; c[i * 3 + 2] = col.b;
+        s[i] = 3.1 - t * 1.3 + rnd() * 0.8;
+      }
+      g.setAttribute('position', new THREE.BufferAttribute(p, 3));
+      g.setAttribute('aColor', new THREE.BufferAttribute(c, 3));
+      g.setAttribute('aSize', new THREE.BufferAttribute(s, 1));
+      const pts = new THREE.Points(g, crabMat.clone());
+      pts.frustumCulled = false;
+      qsoGroup.add(pts);
+      return pts;
+    })();
+
+    labels.push({ id: 'quasar', text: '类星体 · 3C 273', cls: 'label-arm', maxDist: 2400, pos: () => QSO_POS.clone().add(new THREE.Vector3(0, 104, 0)) });
+    pickSphere(qsoGroup, new THREE.Vector3(0, 0, 0), 78, 'quasar');
+
+    /* ============================================================
+       脉冲星 · 灯塔模型
+       ============================================================ */
+    const PSR_POS = new THREE.Vector3(-720, 320, -430);
+    const psrGroup = new THREE.Group();
+    psrGroup.position.copy(PSR_POS);
+    scene.add(psrGroup);
+
+    const psrStar = new THREE.Mesh(
+      new THREE.SphereGeometry(2.6, 24, 16),
+      new THREE.MeshBasicMaterial({ color: 0xeafcff })
+    );
+    psrGroup.add(psrStar);
+    const psrHalo = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: C3D.Tex.glow('rgba(225,250,255,1)', 'rgba(90,190,255,0.05)'),
+      transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending
+    }));
+    psrHalo.scale.set(26, 26, 1);
+    psrGroup.add(psrHalo);
+
+    // 磁极的两个锥形射束（与自转轴有夹角 → 扫过空间才形成「脉冲」）
+    const psrBeams = new THREE.Group();
+    psrBeams.rotation.z = 0.42;
+    const psrBeamMat = new THREE.MeshBasicMaterial({
+      color: 0xa8ecff, transparent: true, opacity: 0.075, depthWrite: false,
+      blending: THREE.AdditiveBlending, side: THREE.DoubleSide
+    });
+    const psrBeamGeo = new THREE.ConeGeometry(4.4, 130, 24, 1, true);
+    const psrBeamA = new THREE.Mesh(psrBeamGeo, psrBeamMat);
+    psrBeamA.position.y = 65;
+    const psrBeamB = new THREE.Mesh(psrBeamGeo, psrBeamMat);
+    psrBeamB.position.y = -65;
+    psrBeamB.rotation.z = Math.PI;
+    psrBeams.add(psrBeamA, psrBeamB);
+    psrGroup.add(psrBeams);
+
+    labels.push({ id: 'pulsar', text: '脉冲星 · 宇宙灯塔', cls: 'label-arm', maxDist: 2400, pos: () => PSR_POS.clone().add(new THREE.Vector3(0, 68, 0)) });
+    pickSphere(psrGroup, new THREE.Vector3(0, 0, 0), 62, 'pulsar');
+
+    /* ============================================================
+       猎户座大星云 M42
+       ============================================================ */
+    const ORI_POS = new THREE.Vector3(80, -420, 760);
+    const oriGroup = new THREE.Group();
+    oriGroup.position.copy(ORI_POS);
+    oriGroup.rotation.set(0.3, 0.6, 0.1);
+    scene.add(oriGroup);
+
+    const oriCloud = (function () {
+      const N = 34000;
+      const g = new THREE.BufferGeometry();
+      const p = new Float32Array(N * 3), c = new Float32Array(N * 3), s = new Float32Array(N);
+      const rnd = C3D.noise.mulberry32(421042);
+      const col = new THREE.Color();
+      const pal = [[0.45, 0.92, 0.95], [0.62, 0.78, 1.0], [1.0, 0.62, 0.78], [1.0, 0.82, 0.58]];
+      for (let i = 0; i < N; i++) {
+        // 中空壳层：中心被年轻恒星的辐射吹空
+        const r = 22 + Math.pow(rnd(), 0.62) * 74;
+        const u = rnd() * 2 - 1, th = rnd() * TAU, sq = Math.sqrt(1 - u * u);
+        const flat = 0.62 + rnd() * 0.5;
+        p[i * 3] = r * sq * Math.cos(th) * (1.0 + 0.18 * Math.sin(th * 3));
+        p[i * 3 + 1] = r * u * flat;
+        p[i * 3 + 2] = r * sq * Math.sin(th) * (1.0 + 0.18 * Math.cos(th * 2));
+        const pc = pal[(rnd() * pal.length) | 0];
+        const b = 0.20 + rnd() * 0.52 * (1 - (r - 22) / 96);
+        col.setRGB(pc[0] * b, pc[1] * b, pc[2] * b);
+        c[i * 3] = col.r; c[i * 3 + 1] = col.g; c[i * 3 + 2] = col.b;
+        s[i] = 1.2 + Math.pow(rnd(), 3) * 5.4;
+      }
+      g.setAttribute('position', new THREE.BufferAttribute(p, 3));
+      g.setAttribute('aColor', new THREE.BufferAttribute(c, 3));
+      g.setAttribute('aSize', new THREE.BufferAttribute(s, 1));
+      const pts = new THREE.Points(g, crabMat.clone());
+      pts.frustumCulled = false;
+      oriGroup.add(pts);
+      return pts;
+    })();
+
+    // 星云整体柔光
+    const oriGlow = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: C3D.Tex.glow('rgba(120,230,225,0.34)', 'rgba(90,140,255,0.02)'),
+      transparent: true, opacity: 0.30, depthWrite: false, blending: THREE.AdditiveBlending
+    }));
+    oriGlow.scale.set(150, 150, 1);
+    oriGroup.add(oriGlow);
+
+    // 四边形星团：点亮星云的四颗年轻恒星
+    const trap = [
+      [0, 0, 0, 3.1], [7, 4, 2, 2.2], [-6, 5, -3, 1.9], [3, -6, 4, 1.7]
+    ];
+    for (let i = 0; i < trap.length; i++) {
+      const t = trap[i];
+      const st = new THREE.Mesh(new THREE.SphereGeometry(t[3] * 0.36, 16, 12), new THREE.MeshBasicMaterial({ color: 0xeaf6ff }));
+      st.position.set(t[0], t[1], t[2]);
+      oriGroup.add(st);
+      const gl = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: C3D.Tex.glow('rgba(225,245,255,0.95)', 'rgba(140,200,255,0.02)'),
+        transparent: true, opacity: 0.7, depthWrite: false, blending: THREE.AdditiveBlending
+      }));
+      gl.scale.set(t[3] * 9, t[3] * 9, 1);
+      gl.position.copy(st.position);
+      oriGroup.add(gl);
+    }
+
+    labels.push({ id: 'orion', text: '猎户座大星云 · M42', cls: 'label-arm', maxDist: 2400, pos: () => ORI_POS.clone().add(new THREE.Vector3(0, 92, 0)) });
+    pickSphere(oriGroup, new THREE.Vector3(0, 0, 0), 96, 'orion');
+
+    /* ============================================================
+       引力透镜 · 爱因斯坦环
+       ============================================================ */
+    const LENS_POS = new THREE.Vector3(-800, -300, -560);
+    const lensGroup = new THREE.Group();
+    lensGroup.position.copy(LENS_POS);
+    scene.add(lensGroup);
+
+    // 前景星系（透镜）
+    const lensGal = galaxyPoints(7000, 17, 1212, { arms: 2, twist: 2.0, spin: 0.04, scale: 0.7 });
+    lensGroup.add(lensGal);
+    const lensCore = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: C3D.Tex.glow('rgba(255,235,200,0.75)', 'rgba(255,180,90,0.02)'),
+      transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending
+    }));
+    lensCore.scale.set(22, 22, 1);
+    lensGroup.add(lensCore);
+
+    // 被扭曲的背景星系：四段弧 + 一圈很淡的完整爱因斯坦环
+    const arcMat = new THREE.MeshBasicMaterial({
+      color: 0xa8d8ff, transparent: true, opacity: 0.55, depthWrite: false,
+      blending: THREE.AdditiveBlending, side: THREE.DoubleSide
+    });
+    for (let i = 0; i < 4; i++) {
+      const arc = new THREE.Mesh(new THREE.TorusGeometry(58, 1.5, 8, 48, 1.05), arcMat);
+      arc.rotation.z = i * (TAU / 4) + 0.4;
+      arc.scale.set(1, 1 + (i % 2) * 0.06, 1);
+      lensGroup.add(arc);
+    }
+    const einstein = new THREE.Mesh(
+      new THREE.TorusGeometry(58, 0.55, 8, 96),
+      new THREE.MeshBasicMaterial({ color: 0x8fc7ff, transparent: true, opacity: 0.16, depthWrite: false, blending: THREE.AdditiveBlending })
+    );
+    lensGroup.add(einstein);
+
+    labels.push({ id: 'lens', text: '引力透镜 · 爱因斯坦环', cls: 'label-arm', maxDist: 2400, pos: () => LENS_POS.clone().add(new THREE.Vector3(0, 72, 0)) });
+    pickSphere(lensGroup, new THREE.Vector3(0, 0, 0), 70, 'lens');
+
+    /* ============================================================
+       哈勃深场
+       ============================================================ */
+    const FIELD_POS = new THREE.Vector3(340, 520, -880);
+    const fieldGroup = new THREE.Group();
+    fieldGroup.position.copy(FIELD_POS);
+    fieldGroup.rotation.set(0.1, -0.25, 0);
+    scene.add(fieldGroup);
+
+    const fieldPts = (function () {
+      const N = 1700;
+      const g = new THREE.BufferGeometry();
+      const p = new Float32Array(N * 3), c = new Float32Array(N * 3), s = new Float32Array(N);
+      const rnd = C3D.noise.mulberry32(19951218);
+      const col = new THREE.Color();
+      const pal = [[0.72, 0.84, 1.0], [1.0, 0.92, 0.78], [1.0, 0.78, 0.66], [0.86, 0.78, 1.0], [0.9, 0.95, 1.0]];
+      for (let i = 0; i < N; i++) {
+        p[i * 3] = (rnd() - 0.5) * 116;
+        p[i * 3 + 1] = (rnd() - 0.5) * 94;
+        p[i * 3 + 2] = (rnd() - 0.5) * 50;
+        const pc = pal[(rnd() * pal.length) | 0];
+        const b = 0.5 + Math.pow(rnd(), 1.8) * 0.85;
+        col.setRGB(pc[0] * b, pc[1] * b, pc[2] * b);
+        c[i * 3] = col.r; c[i * 3 + 1] = col.g; c[i * 3 + 2] = col.b;
+        s[i] = 2.4 + Math.pow(rnd(), 2.6) * 4.6;
+      }
+      g.setAttribute('position', new THREE.BufferAttribute(p, 3));
+      g.setAttribute('aColor', new THREE.BufferAttribute(c, 3));
+      g.setAttribute('aSize', new THREE.BufferAttribute(s, 1));
+      const pts = new THREE.Points(g, crabMat.clone());
+      pts.frustumCulled = false;
+      fieldGroup.add(pts);
+      return pts;
+    })();
+
+    // 视场框：这块天区在天空中只有满月的百分之一
+    (function () {
+      const w = 62, h = 50;
+      const pts = [
+        -w, -h, 0, w, -h, 0, w, h, 0, -w, h, 0
+      ];
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pts), 3));
+      const line = new THREE.LineLoop(g, new THREE.LineBasicMaterial({
+        color: 0x4d7fae, transparent: true, opacity: 0.45, depthWrite: false
+      }));
+      fieldGroup.add(line);
+    })();
+
+    labels.push({ id: 'field', text: '哈勃深场 · 一万个星系', cls: 'label-arm', maxDist: 2400, pos: () => FIELD_POS.clone().add(new THREE.Vector3(0, 62, 0)) });
+    pickSphere(fieldGroup, new THREE.Vector3(0, 0, 0), 74, 'field');
+
     /* ---------- 状态 ---------- */
     const state = { selectedId: 'bh' };
 
@@ -443,6 +693,22 @@
         crab.rotation.y += dt * 0.012;
         photonRing.material.rotation = 0;
         bhGlow.material.opacity = 0.5 + Math.sin(t * 0.8) * 0.08;
+        // 类星体：喷流缓慢进动 + 核心闪烁
+        qJet.rotation.y += dt * 0.12;
+        qHalo.material.opacity = 0.44 + Math.sin(t * 1.6) * 0.07;
+        qCore.scale.setScalar(1 + Math.sin(t * 2.2) * 0.04);
+        // 脉冲星：射束扫过
+        psrBeams.rotation.y += dt * 2.6;
+        const sweep = Math.abs(Math.sin(t * 2.6));
+        psrHalo.material.opacity = 0.34 + sweep * 0.42;
+        const ph = 22 + sweep * 7;
+        psrHalo.scale.set(ph, ph, 1);
+        psrBeamMat.opacity = 0.045 + sweep * 0.075;
+        // 星云缓慢流动 / 透镜环旋转
+        oriCloud.rotation.y += dt * 0.006;
+        oriCloud.rotation.x = Math.sin(t * 0.05) * 0.05;
+        lensGroup.rotation.z += dt * 0.012;
+        fieldGroup.rotation.y = -0.25 + Math.sin(t * 0.04) * 0.02;
         stars.rotation.y += dt * 0.0003;
       },
 
@@ -475,6 +741,16 @@
           Core.rig.flyTo(CRAB_POS, 105, { duration: dur, theta: 0.9, phi: 1.18 });
         } else if (id === 'merger') {
           Core.rig.flyTo(MERGE_POS.clone().add(new THREE.Vector3(3, 4, 4)), 142, { duration: dur, theta: 0.75, phi: 1.12 });
+        } else if (id === 'quasar') {
+          Core.rig.flyTo(QSO_POS, 205, { duration: dur, theta: 0.62, phi: 1.26 });
+        } else if (id === 'pulsar') {
+          Core.rig.flyTo(PSR_POS, 195, { duration: dur, theta: 1.15, phi: 1.22 });
+        } else if (id === 'orion') {
+          Core.rig.flyTo(ORI_POS, 300, { duration: dur, theta: 0.48, phi: 1.34 });
+        } else if (id === 'lens') {
+          Core.rig.flyTo(LENS_POS, 195, { duration: dur, theta: 0.92, phi: 1.2 });
+        } else if (id === 'field') {
+          Core.rig.flyTo(FIELD_POS, 180, { duration: dur, theta: 0.58, phi: 1.24 });
         }
         Core.rig.follow = null;
       },

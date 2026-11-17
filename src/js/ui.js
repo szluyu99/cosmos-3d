@@ -24,8 +24,8 @@
     },
     deep: {
       title: '深空', rail: '深空 · 极端天体',
-      hint: '点击标签，前往三种极端天体',
-      intro: '深空：黑洞、超新星遗迹与星系并合。'
+      hint: '点击标签，前往其中一种极端天体',
+      intro: '深空：黑洞、中子星、恒星诞生、类星体与引力透镜。'
     },
     starmap: {
       title: '星空',
@@ -44,7 +44,7 @@
     solar: ['sun', 'mercury', 'venus', 'earth', 'moon', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'belt'],
     stellar: ['red', 'sunlike', 'massive', 'huge'],
     galaxy: ['core', 'sunpos', 'orion', 'perseus', 'halo'],
-    deep: ['bh', 'crab', 'merger'],
+    deep: ['bh', 'crab', 'merger', 'quasar', 'pulsar', 'orion', 'lens', 'field'],
     zoom: ['human', 'tree', 'city', 'orbit', 'earth', 'moon', 'sun', 'au', 'sol', 'void', 'prox',
            'nebula', 'galaxy', 'group', 'supercluster', 'cosmicweb', 'universe'],
     starmap: ['ori', 'cma', 'gem', 'tau', 'uma', 'leo', 'cyg', 'lyr', 'aql', 'sco', 'and', 'cas', 'cru']
@@ -73,7 +73,7 @@
     mars: 'life', jupiter: 'scale', saturn: 'scale', uranus: 'scale',
     neptune: 'scale', belt: 'dust',
     core: 'bh', sunpos: 'galaxy', orion: 'dust', perseus: 'galaxy', halo: 'dark',
-    bh: 'bh', crab: 'star', merger: 'galaxy',
+    bh: 'bh', crab: 'star', merger: 'galaxy', quasar: 'bh', pulsar: 'star', orion: 'dust', lens: 'bh', field: 'galaxy',
     red: 'star', sunlike: 'star', massive: 'star', huge: 'bh',
     human: 'scale', tree: 'dust', city: 'scale', sol: 'scale',
     prox: 'star', galaxy: 'galaxy', group: 'galaxy', universe: 'galaxy',
@@ -459,7 +459,7 @@
       const dots = $('#tour-dots');
       dots.innerHTML = tour.stops.map((_, i) => '<i class="' + (i === t.i ? 'on' : '') + '"></i>').join('');
       const obj = (C3D.DATA[t.scene] || {})[stop.id];
-      $('#tour-text').innerHTML = '<b>' + (obj ? obj.cn : stop.id) + '</b>' + stop.text +
+      $('#tour-text').innerHTML = '<b>' + (obj ? obj.cn : stop.id) + '</b> · ' + stop.text +
         '<span style="color:#66758f"> · ' + (t.i + 1) + '/' + tour.stops.length + '</span>';
       if (this.C.active.focus) this.C.active.focus(stop.id, { instant: false });
       this.select(stop.id, { focus: false });
